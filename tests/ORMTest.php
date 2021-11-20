@@ -8,6 +8,8 @@
 use PHPUnit\Framework\TestCase;
 
 require_once "./vendor/autoload.php";
+require_once "./src/orm/Person.php";
+
 
 class ORMTest extends TestCase
 {
