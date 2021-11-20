@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests" tests="2" assertions="5" errors="0" warnings="0" failures="0" skipped="0" time="0.362504">
+    <testsuite name="ORMTest" file="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests/ORMTest.php" tests="2" assertions="5" errors="0" warnings="0" failures="0" skipped="0" time="0.362504">
+      <testcase name="testClassExists" class="ORMTest" classname="ORMTest" file="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests/ORMTest.php" line="21" assertions="1" time="0.140945"/>
+      <testcase name="testPerson" class="ORMTest" classname="ORMTest" file="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests/ORMTest.php" line="26" assertions="4" time="0.221559"/>
+    </testsuite>
+  </testsuite>
+</testsuites>

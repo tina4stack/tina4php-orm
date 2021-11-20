@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Tina4 - This is not a 4ramework.
  * Copy-right 2007 - current Tina4
@@ -16,7 +15,8 @@ use function PHPUnit\Framework\throwException;
  */
 class ORM implements \JsonSerializable
 {
-    //use Utility;
+    use ORMUtility;
+    use DataUtility;
 
     /**
      * @var string The primary key fields in the table, can have more than one separated by comma e.g. store_id,company_id
@@ -47,12 +47,12 @@ class ORM implements \JsonSerializable
     /**
      * @var array A map of fields from the table to the object
      */
-    public $fieldMapping = null;
+    public $fieldMapping = [];
 
     /**
      * @var array An array of fields that do not belong to the table and should not be considered in an update or insert when saving
      */
-    public $virtualFields = null;
+    public $virtualFields = [];
 
     /**
      * @var array An array of fields that belong to the table and should not be returned in the object
@@ -108,33 +108,35 @@ class ORM implements \JsonSerializable
      * @param string $primaryKey The primary key of the table
      * @param string $tableFilter A filter to limit the records when the data is fetched into the class
      * @param DataBase $DBA A relevant database connection to fetch information from
-     * @throws Exception Error on failure
+     * @throws \Exception Error on failure
      * @example examples/exampleORMObject.php Create class object extending ORM
      */
-    public function __construct($request = null, $fromDB = false, $tableName = "", $fieldMapping = "", $primaryKey = "", $tableFilter = "", $DBA = null)
+    final public function __construct($request = null, bool $fromDB = false, string $tableName = "", $fieldMapping = [], string $primaryKey = "", string $tableFilter = "", $DBA = null)
     {
         $this->create($request, $fromDB, $tableName, $fieldMapping, $primaryKey, $tableFilter, $DBA);
     }
 
     /**
      * Allows ORM to be created
-     * @param null $request
+     * @param mixed $request
      * @param boolean $fromDB True or false - is data from the database
      * @param string $tableName
      * @param string $fieldMapping
      * @param string $primaryKey
      * @param string $tableFilter
      * @param null $DBA
-     * @throws Exception|\Exception
+     * @throws \Exception
      */
-    public function create($request = null, $fromDB = false, $tableName = "", $fieldMapping = "", $primaryKey = "", $tableFilter = "", $DBA = null): void
+    final public function create($request = null, bool $fromDB = false, string $tableName = "", array $fieldMapping = [], string $primaryKey = "", string $tableFilter = "", $DBA = null): void
     {
-        if (!empty($request) && !is_object($request) && !is_array($request) && !json_decode($request)) {
+        if (!empty($request) && !is_object($request) && !is_array($request) && !json_decode($request, true)) {
             throw new \Exception("Input is not an array or object");
         }
 
         if (!empty($tableName)) {
             $this->tableName = $tableName;
+        } else {
+            $this->tableName = $this->getTableName($tableName);
         }
 
         if (!empty($primaryKey)) {
@@ -153,10 +155,8 @@ class ORM implements \JsonSerializable
             $this->DBA = $DBA;
         }
 
-        if (!empty($this->databaseGlobal)) {
-            if (isset($GLOBALS[$this->databaseGlobal])) {
-                $this->DBA = $GLOBALS[$this->databaseGlobal];
-            }
+        if (!empty($this->databaseGlobal) && isset($GLOBALS[$this->databaseGlobal])) {
+            $this->DBA = $GLOBALS[$this->databaseGlobal];
         }
 
         if (empty($this->DBA)) {
@@ -168,7 +168,7 @@ class ORM implements \JsonSerializable
         }
 
         if ($request) {
-            if (!is_array($request) && !is_object($request) && json_decode((string)$request)) {
+            if (!is_array($request) && !is_object($request) && json_decode((string)$request, true)) {
                 $request = json_decode((string)$request, true);
 
                 foreach ($request as $key => $value) {
@@ -197,44 +197,12 @@ class ORM implements \JsonSerializable
     }
 
     /**
-     * Gets a proper object name for returning back data
-     * @param string $name Improper object name
-     * @param boolean $camelCase Return the name as camel case
-     * @return string Proper object name
-     * @tests tina4
-     *   assert ("test_name", true) === "testName", "Camel case is broken"
-     *   assert ("test_name", false) === "test_name", "Camel case is broken"
-     */
-    public function getObjectName($name, $camelCase = false): string
-    {
-        if (isset($this->fieldMapping) && !empty($this->fieldMapping)) {
-            $fieldMap = array_change_key_case(array_flip($this->fieldMapping), CASE_LOWER);
-
-            if (isset($fieldMap[$name])) {
-                return $fieldMap[$name];
-            }
-
-            if (!$camelCase) {
-                return $name;
-            }
-
-            return $this->camelCase($name);
-        }
-
-        if (!$camelCase) {
-            return $name;
-        }
-
-        return $this->camelCase($name);
-    }
-
-    /**
      * Saves a file into the database
      * @param $fieldName
      * @param $fileInputName
      * @return bool
      */
-    public function saveFile($fieldName, $fileInputName): bool
+    final public function saveFile(string $fieldName, string $fileInputName): bool
     {
         $tableName = $this->getTableName();
 
@@ -268,25 +236,16 @@ class ORM implements \JsonSerializable
      * @param string $tableName The class name
      * @return string|null Returns the name of the table or null if it does not fit the if statements criteria
      */
-    public function getTableName($tableName = ""): string
+    final public function getTableName(string $tableName = ""): string
     {
         if (empty($tableName) && empty($this->tableName)) {
             $className = explode("\\", get_class($this));
-
             $className = $className[count($className) - 1];
 
             return strtolower($this->getFieldName($className));
-        } else {
-            if (!empty($tableName)) {
-
-                return $tableName;
-            } elseif (!empty($this->tableName)) {
-
-                return $this->tableName;
-            }
         }
 
-        return "";
+        return $this->tableName;
     }
 
     /**
@@ -296,7 +255,7 @@ class ORM implements \JsonSerializable
      * @param bool $ignoreMapping Ignore the field mapping
      * @return string Required field name from database
      */
-    public function getFieldName(string $name, $fieldMapping = [], $ignoreMapping = false): ?string
+    final public function getFieldName(string $name, array $fieldMapping = [], bool $ignoreMapping = false): ?string
     {
         if (strpos($name, "_")) {
             return $name;
@@ -305,19 +264,19 @@ class ORM implements \JsonSerializable
         if (!empty($fieldMapping) && isset($fieldMapping[$name]) && !$ignoreMapping) {
 
             return ($fieldMapping[$name]);
-        } else {
-            $fieldName = "";
-
-            for ($i = 0, $iMax = strlen($name); $i < $iMax; $i++) {
-                if (\ctype_upper($name[$i]) && $i != 0 && $i < strlen($name) - 1 && (!\ctype_upper($name[$i - 1]) || !\ctype_upper($name[$i + 1]))) {
-                    $fieldName .= "_" . $name[$i];
-                } else {
-                    $fieldName .= $name[$i];
-                }
-            }
-
-            return ($fieldName);
         }
+
+        $fieldName = "";
+
+        for ($i = 0, $iMax = strlen($name); $i < $iMax; $i++) {
+            if (\ctype_upper($name[$i]) && $i != 0 && $i < strlen($name) - 1 && (!\ctype_upper($name[$i - 1]) || !\ctype_upper($name[$i + 1]))) {
+                $fieldName .= "_" . $name[$i];
+            } else {
+                $fieldName .= $name[$i];
+            }
+        }
+
+        return ($fieldName);
     }
 
     /**
@@ -327,7 +286,7 @@ class ORM implements \JsonSerializable
      * @param boolean $fromDB flags it so the result is ready to go back to the database
      * @return array Contains all table data
      */
-    public function getTableData($fieldMapping = [], $fromDB = false): array
+    final public function getTableData(array $fieldMapping = [], bool $fromDB = false): array
     {
         $tableData = [];
         if (!empty($this->fieldMapping) && empty($fieldMapping) && $fromDB) {
@@ -369,7 +328,7 @@ class ORM implements \JsonSerializable
      * @param array $tableData Array of table data
      * @return string e.g. "id = ''"
      */
-    public function getPrimaryCheck($tableData): string
+    final public function getPrimaryCheck(array $tableData): string
     {
         $primaryFields = explode(",", $this->primaryKey);
 
@@ -379,7 +338,7 @@ class ORM implements \JsonSerializable
             foreach ($primaryFields as $id => $primaryField) {
                 $primaryTableField = $this->getFieldName($primaryField, $this->fieldMapping);
 
-                if (key_exists($primaryTableField, $tableData)) {
+                if (array_key_exists($primaryTableField, $tableData)) {
                     $primaryFieldFilter[] = str_replace("= ''", "is null", "{$primaryTableField} = '" . $tableData[$primaryTableField] . "'");
                 } else {
                     $primaryFieldFilter[] = "{$primaryTableField} is null";
@@ -396,7 +355,7 @@ class ORM implements \JsonSerializable
      * @param $content
      * @return bool
      */
-    public function saveBlob($fieldName, $content): bool
+    final public function saveBlob(string $fieldName, string $content): bool
     {
         $tableName = $this->getTableName();
 
@@ -421,23 +380,26 @@ class ORM implements \JsonSerializable
 
     /**
      * Save the data populated into the object to the provided data connection
-     * @param string $tableName Name of the table
-     * @param array $fieldMapping Array of field mapping
+     * @param string $tableName Name of the table if default not wanted
+     * @param array $fieldMapping Array of field mapping if defaults not used
      * @return object Result set
-     * @throws Exception Error on failure
+     * @throws \Exception Error on failure
      * @example examples\exampleORMGenerateInsertSQL.php For insert of database row
      * @example examples\exampleORMGenerateUpdateSQL.php For update of database row
      * @example examples\exampleORMCreateTriggerUsingGenerateUpdateSQL.php For creating an external database trigger
      */
-    public function save($tableName = "", $fieldMapping = [])
+    final public function save(string $tableName = "", array $fieldMapping = [])
     {
-        if (!empty($fieldMapping) && empty($this->fieldMapping)) {
-            $this->fieldMapping = $fieldMapping;
+        if (empty($tableName)) {
+            $tableName = $this->tableName;
         }
 
-        $tableName = $this->getTableName($tableName);
         if (!$this->checkDBConnection($tableName)) {
-            throw new \Exception("No database connection");
+            throw new \Exception("No table found, please see migrations or create table using generate create SQL");
+        }
+
+        if (!empty($fieldMapping) && empty($this->fieldMapping)) {
+            $this->fieldMapping = $fieldMapping;
         }
 
         $tableData = $this->getTableData($this->fieldMapping, false);
@@ -450,7 +412,7 @@ class ORM implements \JsonSerializable
         //See if we can get the fetch from the cached data
         $key = "orm" . md5($sqlCheck);
 
-        (new Cache())->set($key, null, 0);
+        (new ORMCache())->set($key, null, 0);
 
         if (defined("TINA4_DEBUG") && TINA4_DEBUG) {
             Debug::message("TINA4: check " . $sqlCheck, TINA4_LOG_DEBUG);
@@ -468,9 +430,9 @@ class ORM implements \JsonSerializable
                 }    else {
                     $getLastId = ((string)($this->{$this->primaryKey}) === "");
                 }
-                $sqlStatement = $this->generateInsertSQL($tableData, $tableName);
+                $sqlStatement = (new ORMSQLGenerator())->generateInsertSQL($tableData, $tableName, $this);
             } else {  //update
-                $sqlStatement = $this->generateUpdateSQL($tableData, $primaryCheck, $tableName);
+                $sqlStatement = (new ORMSQLGenerator())->generateUpdateSQL($tableData, $primaryCheck, $tableName, $this);
             }
 
             $params = [];
@@ -482,7 +444,7 @@ class ORM implements \JsonSerializable
             // Return can be a DataResult or a DataError. We need to pickup the difference
             $returning = call_user_func([$this->DBA, "exec"], ...$params);
 
-            if (get_class($returning) == "Tina4\DataError") {
+            if ($returning instanceof \Tina4\DataError) {
                 $error = $returning;
             } else {
                 $error = $returning->error;
@@ -524,12 +486,12 @@ class ORM implements \JsonSerializable
                     return null;
                 }
             } else {
-                $this->getDebugBackTrace();
+                //$this->getDebugBackTrace();
 
                 throw new \Exception("Error:\n" . print_r($error->getError(), 1));
             }
         } else {
-            $this->getDebugBackTrace();
+            //$this->getDebugBackTrace();
 
             throw new \Exception("Error:\n" . print_r($exists->error, 1));
         }
@@ -542,11 +504,8 @@ class ORM implements \JsonSerializable
      * @return bool
      * @throws \ReflectionException
      */
-    public function checkDBConnection($tableName = ""): bool
+    final public function checkDBConnection(string $tableName = ""): bool
     {
-        if (empty($tableName)) {
-            $tableName = $this->getTableName();
-        }
 
         if (empty($this->DBA)) {
             global $DBA;
@@ -556,231 +515,30 @@ class ORM implements \JsonSerializable
 
         if (empty($this->DBA)) {
             return false;
-        } else {
-            if ($this->DBA->isNoSQL())
-            {
-                return true; //NoSQL databases do not need table to exist
-            }
+        }
 
-            //Check to see if the table exists
-            if (!$this->DBA->tableExists($tableName)) {
-                $sqlCreate = $this->generateCreateSQL($this->getTableData(), $tableName);
+        if ($this->DBA->isNoSQL())
+        {
+            return true; //NoSQL databases do not need table to exist
+        }
 
-                if (defined("TINA4_DEBUG") && TINA4_DEBUG) {
-                    Debug::message("TINA4: We need to make a table for " . $tableName . "\n" . $sqlCreate, TINA4_LOG_DEBUG);
-                    //Make a migration for it
+        //Check to see if the table exists
+        if (!$this->DBA->tableExists($tableName)) {
+            $sqlCreate = $this->generateCreateSQL($tableName);
+
+            if (defined("TINA4_DEBUG") && TINA4_DEBUG) {
+                Debug::message("TINA4: We need to make a table for " . $tableName . "\n" . $sqlCreate, TINA4_LOG_DEBUG);
+                //Make a migration for it
+                if (class_exists("Tina4\Migration")) {
                     $migrate = (new Migration());
                     $migrate->createMigration(" create table {$tableName}", $sqlCreate, true);
                 }
-
-                return false;
             }
 
-            return true;
-        }
-    }
-
-    /**
-     * Generate SQL for creating a table
-     * @param $tableData
-     * @param string $tableName
-     * @return string
-     * @throws \ReflectionException
-     */
-    public function generateCreateSQL($tableData, $tableName = ""): string
-    {
-        $className = get_class($this);
-
-        $tableName = $this->getTableName($tableName);
-
-        $fields = [];
-
-        foreach ($tableData as $fieldName => $fieldValue) {
-            //@todo fix
-            if (!property_exists($className, $this->getObjectName($fieldName, true))) {
-                continue;
-            }
-
-            $property = new \ReflectionProperty($className, $this->getObjectName($fieldName, true));
-
-            preg_match_all('#@(.*?)(\r\n|\n)#s', $property->getDocComment(), $annotations);
-
-            if (!empty($annotations[1])) {
-                $fieldInfo = explode(" ", $annotations[1][0], 2);
-            } else {
-                $fieldInfo = [];
-            }
-
-            if (empty($fieldInfo[1])) {
-                if ($fieldName == "id") {
-                    $fieldInfo[1] = "integer not null";
-                } else {
-                    $fieldInfo[1] = "varchar(1000)";
-                }
-            }
-
-            $fields[] = "\t" . $this->getObjectName($fieldName) . " " . $fieldInfo[1];
+            return false;
         }
 
-        $fields[] = "   primary key (" . $this->primaryKey . ")";
-
-        return "create table {$tableName} (\n" . implode(",\n", $fields) . "\n)";
-    }
-
-    /**
-     * Generates an insert statement
-     * @param array $tableData Array of table data
-     * @param string $tableName Name of the table
-     * @return array Generated insert query
-     * @throws Exception Error on failure
-     */
-    public function generateInsertSQL($tableData, $tableName): array
-    {
-        $insertColumns = [];
-
-        $insertValues = [];
-
-        $fieldValues = [];
-
-        $returningStatement = "";
-
-        $keyInFieldList = false;
-
-        $fieldIndex = 0;
-
-        foreach ($tableData as $fieldName => $fieldValue) {
-            if (is_null($fieldValue) && $fieldValue !== 0) {
-                continue;
-            }
-
-            if ($fieldName === "form_token") {
-                continue;
-            } //form token is reserved
-
-            if (in_array($this->getObjectName($fieldName, true), $this->virtualFields, true) || in_array($fieldName, $this->virtualFields, true) || in_array($fieldName, $this->readOnlyFields, true)) {
-                continue;
-            }
-
-            $fieldIndex++;
-
-            $insertColumns[] = $this->getFieldName($fieldName,$this->fieldMapping);
-
-            if (strtoupper($this->getFieldName($fieldName,$this->fieldMapping)) === strtoupper($this->getFieldName($this->primaryKey,$this->fieldMapping))) {
-                $keyInFieldList = true;
-            }
-
-            if (is_null($fieldValue)) {
-                $fieldValue = "null";
-            }
-
-            if ($fieldValue === "null" || (is_numeric($fieldValue) && !gettype($fieldValue) === "string")) {
-                $insertValues[] = $this->DBA->getQueryParam($this->getFieldName($fieldName,$this->fieldMapping), $fieldIndex);
-                $fieldValues[] = $fieldValue;
-            } else {
-                if ($this->isDate($fieldValue, $this->DBA->dateFormat)) {
-                    $fieldValue = $this->formatDate($fieldValue, $this->DBA->dateFormat, $this->DBA->getDefaultDatabaseDateFormat());
-                }
-
-                $insertValues[] = $this->DBA->getQueryParam($this->getFieldName($fieldName,$this->fieldMapping), $fieldIndex);
-
-                $fieldValues[] = $fieldValue;
-            }
-        }
-
-        //Create a new primary key because we are not using a generator or auto increment
-        if (!$keyInFieldList && $this->genPrimaryKey) {
-            $sqlGen = "select max(" . $this->getFieldName($this->primaryKey,$this->fieldMapping) . ") as new_id from {$tableName}";
-
-            $maxResult = $this->DBA->fetch($sqlGen)->AsObject();
-
-            $insertColumns[] = $this->getFieldName($this->primaryKey,$this->fieldMapping);
-
-            $newId = $maxResult[0]->newId;
-
-            $newId++;
-
-            $this->{$this->primaryKey} = $newId;
-
-            $fieldIndex++;
-
-            $insertValues[] = $this->DBA->getQueryParam($this->getFieldName($this->primaryKey,$this->fieldMapping), $fieldIndex);
-
-            $fieldValues[] = $newId;
-        }
-
-        if (!empty($this->DBA) && !$keyInFieldList) {
-            if (get_class($this->DBA) === "Tina4\DataFirebird") {
-                $returningStatement = " returning (" . $this->getFieldName($this->primaryKey,$this->fieldMapping) . ")";
-            } elseif (get_class($this->DBA) === "Tina4\DataSQLite3") {
-                $returningStatement = "";
-            }
-        }
-
-        Debug::message("SQL:\ninsert into {$tableName} (" . join(",", $insertColumns) . ")\nvalues (" . join(",", $insertValues) . "){$returningStatement}");
-
-        Debug::message("Field Values:\n" . print_r($fieldValues, 1), TINA4_LOG_DEBUG);
-
-        return ["sql" => "insert into {$tableName} (" . implode(",", $insertColumns) . ")\nvalues (" . join(",", $insertValues) . "){$returningStatement}", "fieldValues" => $fieldValues];
-    }
-
-
-    /**
-     * Generates an update statement
-     * @param array $tableData Array of table data
-     * @param string $filter The criteria of what you are searching for to update e.g. "id = 2"
-     * @param string $tableName Name of the table
-     * @return array Generated update query
-     */
-    public function generateUpdateSQL($tableData, $filter, $tableName): array
-    {
-        $fieldValues = [];
-
-        $updateValues = [];
-
-        Debug::message("Table Data:\n" . print_r($tableData, 1), TINA4_LOG_DEBUG);
-
-        $fieldIndex = 0;
-
-        foreach ($tableData as $fieldName => $fieldValue) {
-            if ($fieldName == "form_token") {
-                continue;
-            } //form token is reserved
-
-            if ($this->primaryKey === $fieldName) {
-                continue;
-            }
-
-            if (in_array($this->getObjectName($fieldName, true), $this->virtualFields, true) || in_array($fieldName, $this->virtualFields, true) || in_array($fieldName, $this->readOnlyFields, true)) {
-                continue;
-            }
-
-            if (is_null($fieldValue)) {
-                //$updateValues[] = "{$fieldName} = null";
-                continue;
-            }
-
-            $fieldIndex++;
-            if ((strlen($fieldValue) > 1 && isset($fieldValue[0]) && $fieldValue[0] !== "0") && (is_numeric($fieldValue) && !gettype($fieldValue) === "string")) {
-                $updateValues[] = "{$fieldName} = " . $this->DBA->getQueryParam($fieldName, $fieldIndex);
-
-                $fieldValues[] = $fieldValue;
-            } else {
-                if ($this->isDate($fieldValue, $this->DBA->dateFormat)) {
-                    $fieldValue = $this->formatDate($fieldValue, $this->DBA->dateFormat, $this->DBA->getDefaultDatabaseDateFormat());
-                }
-
-                $updateValues[] = "{$fieldName} = " . $this->DBA->getQueryParam($fieldName, $fieldIndex);
-
-                $fieldValues[] = $fieldValue;
-            }
-        }
-
-
-        Debug::message("SQL:\nupdate {$tableName} set " . join(",", $updateValues) . " where {$filter}", TINA4_LOG_DEBUG);
-
-        Debug::message("Field Values:\n" . print_r($fieldValues, 1), TINA4_LOG_DEBUG);
-
-        return ["sql" => "update {$tableName} set " . join(",", $updateValues) . " where {$filter}", "fieldValues" => $fieldValues];
+        return true;
     }
 
     /**
@@ -788,7 +546,7 @@ class ORM implements \JsonSerializable
      * @param $record
      * @param bool $overRide Overrides existing entries
      */
-    public function mapFromRecord($record, $overRide = false): void
+    final public function mapFromRecord($record, bool $overRide = false): void
     {
         $databaseFields = [];
 
@@ -801,11 +559,9 @@ class ORM implements \JsonSerializable
             if ($overRide) {
                 $this->{$ormField} = $fieldValue;
             } elseif (property_exists($this, $ormField)) {
-                if (property_exists($this, $ormField)) {
                     if ($this->{$ormField} === null && $this->{$ormField} !== "0" && $this->{$ormField} !== "") {
                         $this->{$ormField} = $fieldValue;
                     }
-                }
             }
         }
 
@@ -821,7 +577,7 @@ class ORM implements \JsonSerializable
      * Returns back a list of field names on the ORM
      * @return array
      */
-    public function getFieldNames(): array
+    final public function getFieldNames(): array
     {
         $fields = [];
         foreach ($this as $fieldName => $value) {
@@ -837,7 +593,7 @@ class ORM implements \JsonSerializable
      * Get back an object
      * @return object
      */
-    public function asObject()
+    final public function asObject()
     {
         return (object)$this->jsonSerialize(true);
     }
@@ -847,7 +603,7 @@ class ORM implements \JsonSerializable
      * @param bool $isObject
      * @return array
      */
-    public function jsonSerialize($isObject = false): array
+    public function jsonSerialize(bool $isObject = false): array
     {
         return $this->getObjectData($isObject);
     }
@@ -857,7 +613,7 @@ class ORM implements \JsonSerializable
      * @param bool $isObject
      * @return array
      */
-    public function getObjectData($isObject = false): array
+    final public function getObjectData(bool $isObject = false): array
     {
         //See if we have exclude fields for parsing
         if (!empty($this->excludeFields) && is_string($this->excludeFields)) {
@@ -896,13 +652,16 @@ class ORM implements \JsonSerializable
      * Deletes the record from the database
      * @param string $filter The criteria of what you are searching for to delete e.g. "id = 2"
      * @param string $tableName Name of the table
-     * @param string $fieldMapping Array of field mapping
+     * @param array $fieldMapping Array of field mapping
      * @return object
      * @throws \Exception Error on failure
      */
-    public function delete($filter = "", $tableName = "", $fieldMapping = "")
+    final public function delete(string $filter = "", string $tableName = "", array $fieldMapping = [])
     {
-        $tableName = $this->getTableName($tableName);
+        if (empty($tableName)) {
+            $tableName = $this->tableName;
+        }
+
         if (!$this->checkDBConnection($tableName)) {
             return false;
         }
@@ -912,9 +671,24 @@ class ORM implements \JsonSerializable
             $filter = $this->getPrimaryCheck($tableData);
         }
 
-        $sqlStatement = $this->generateDeleteSQL($filter, $tableName);
+        $sqlStatement = (new ORMSQLGenerator())->generateDeleteSQL($filter, $tableName);
 
-        $error = $this->DBA->exec($sqlStatement);
+        if (!$this->softDelete) {
+            $error = $this->DBA->exec($sqlStatement);
+        } else {
+            $sql = "select * from {$tableName} where {$filter}";
+            $record = $this->DBA->fetchOne($sql)->asArray();
+            if (!isset($record->isDeleted)) {
+                $sql = "alter table {$tableName} add is_deleted integer default 0";
+                $this->DBA->exec($sql);
+                $this->DBA->commit();
+                $sql = "update {$tableName} set is_deleted = 0";
+                $this->DBA->exec($sql);
+            }
+
+            $sql = "update {$tableName} set is_deleted = 1 where {$filter}";
+            $error = $this->DBA->exec ($sql);
+        }
 
         if (empty($error->getError()["errorCode"])) {
             $this->DBA->commit();
@@ -925,37 +699,25 @@ class ORM implements \JsonSerializable
     }
 
     /**
-     * Generates a delete statement
-     * @param string $filter The criteria of what you are searching for to delete e.g. "id = 2"
-     * @param string $tableName The name of the table
-     * @return string Containing deletion query
-     */
-    public function generateDeleteSQL($filter, $tableName = ""): string
-    {
-        $tableName = $this->getTableName($tableName);
-
-        return "delete from {$tableName} where {$filter}";
-    }
-
-    /**
      * Gets the field definitions for the table
-     * @return mixed
+     * @return array
      */
-    final public function getFieldDefinitions()
+    final public function getFieldDefinitions() : array
     {
         $tableName = strtolower($this->getTableName());
+
         if ($this->DBA !== null) {
             return $this->DBA->getDatabase()[$tableName];
-        } else {
-            return null;
         }
+
+        return [];
     }
 
     /**
      * Excludes fields based on a json object or record
      * @param $request
      */
-    public function exclude($request): void
+    final public function exclude($request): void
     {
         if ($request) {
             if (!is_array($request) && !is_object($request) && json_decode((string)$request)) {
@@ -987,7 +749,7 @@ class ORM implements \JsonSerializable
      * @return bool
      * @throws Exception Error on failure
      */
-    public function find($filter = "", $tableName = "", $fieldMapping = [])
+    final public function find($filter = "", $tableName = "", $fieldMapping = [])
     {
         //Translate filter
         $data = $this->getTableData($fieldMapping);
@@ -1009,13 +771,16 @@ class ORM implements \JsonSerializable
      * @throws Exception Error on failure
      * @example examples\exampleORMLoadData.php for loading table row data
      */
-    public function load($filter = "", $tableName = "", $fieldMapping = [])
+    final public function load($filter = "", $tableName = "", $fieldMapping = [])
     {
         if (!empty($fieldMapping) && empty($this->fieldMapping)) {
             $this->fieldMapping = $fieldMapping;
         }
 
-        $tableName = $this->getTableName($tableName);
+        if (empty($tableName)) {
+            $tableName = $this->tableName;
+        }
+
         if (!$this->checkDBConnection($tableName)) {
             return false;
         }
@@ -1032,13 +797,13 @@ class ORM implements \JsonSerializable
 
         $key = "orm" . md5($sqlStatement);
 
-        if ($cacheData = (new Cache())->get($key)) {
+        if ($cacheData = (new ORMCache())->get($key)) {
             Debug::message("Loaded {$sqlStatement} from cache", TINA4_LOG_DEBUG);
             $fetchData = $cacheData;
         } else {
             Debug::message("Creating {$sqlStatement} into cache", TINA4_LOG_DEBUG);
             $fetchData = $this->DBA->fetch($sqlStatement, 1, 0, $fieldMapping)->asObject();
-            (new Cache())->set($key, $fetchData);
+            (new ORMCache())->set($key, $fetchData);
         }
 
         if (!empty($fetchData)) {
@@ -1057,9 +822,9 @@ class ORM implements \JsonSerializable
             }
 
             return $this;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -1068,7 +833,7 @@ class ORM implements \JsonSerializable
      * [["linkField" => "ORM Object"], ["linkField" => "ORM Object"], .....]
      * @return array
      */
-    public function hasOne(): array
+    final public function hasOne(): array
     {
         return $this->hasOne;
     }
@@ -1076,7 +841,7 @@ class ORM implements \JsonSerializable
     /**
      * Loads all the references to the table with a one to one relationship
      */
-    public function loadHasOne(): void
+    final public function loadHasOne(): void
     {
         foreach ($this->hasOne() as $id => $item) {
             foreach ($item as $className => $foreignKey) {
@@ -1097,7 +862,7 @@ class ORM implements \JsonSerializable
      * //Creates a variable on the ORM object of the same name as the ORM Object which is an array / result set of that object
      * @return array
      */
-    public function hasMany(): array
+    final public function hasMany(): array
     {
         return $this->hasMany;
     }
@@ -1105,7 +870,7 @@ class ORM implements \JsonSerializable
     /**
      * Loads all the references to the table with a one to many relationship
      */
-    public function loadHasMany(): void
+    final public function loadHasMany(): void
     {
         foreach ($this->hasMany() as $id => $item) {
             foreach ($item as $className => $foreignKey) {
@@ -1126,7 +891,7 @@ class ORM implements \JsonSerializable
      * @param $word
      * @return string
      */
-    public function pluralize($word): string
+    final public function pluralize($word): string
     {
         $word = strtolower($word);
         $lastLetter = strtolower($word[strlen($word) - 1]);
@@ -1153,7 +918,7 @@ class ORM implements \JsonSerializable
      * Return the object as an array
      * @return array|mixed
      */
-    public function asArray(): array
+    final public function asArray(): array
     {
         return $this->jsonSerialize();
     }
@@ -1163,169 +928,18 @@ class ORM implements \JsonSerializable
      * @param string $fields
      * @param int $limit
      * @param int $offset
-     * @return SQL
+     * @return mixed|SQL
      * @throws \ReflectionException
      */
-    public function select($fields = "*", $limit = 10, $offset = 0)
+    final public function select(string $fields = "*", int $limit = 10, int $offset = 0)
     {
-        if ($this->checkDBConnection()) {
-            $tableName = $this->getTableName($this->tableName);
+        $tableName = $this->getTableName();
+
+        if ($this->checkDBConnection($tableName)) {
             return (new SQL($this))->select($fields, $limit, $offset, $this->hasOne(), $this->hasMany())->from($tableName);
-        } else {
-            return $this;
-        }
-    }
-
-    /**
-     * Generates CRUD
-     * @param string $path
-     * @throws \Twig\Error\LoaderError
-     */
-    public function generateCRUD($path = ""): void
-    {
-        $className = get_class($this);
-        if (empty($path)) {
-            $callingCode = '(new ' . $className . '())->generateCRUD();';
-        } else {
-            $callingCode = '(new ' . $className . '())->generateCRUD("' . $path . '");';
         }
 
-        if (empty($path)) {
-            $backtrace = debug_backtrace();
-            $path = $backtrace[1]["args"][0];
-
-            $path = str_replace(getcwd(), "", $path);
-            $path = str_replace(DIRECTORY_SEPARATOR . "src", "", $path);
-
-            $path = str_replace(".php", "", $path);
-            $path = str_replace(DIRECTORY_SEPARATOR, "/", $path);
-        }
-
-        $backTrace = debug_backtrace()[0];
-        $fileName = ($backTrace["file"]);
-        $line = $backTrace["line"];
-
-
-        if (empty($path)) {
-            $path = str_replace($_SERVER["DOCUMENT_ROOT"], "", str_replace(".php", "", realpath($fileName)));
-        }
-
-        $template = <<<'EOT'
-/**
- * CRUD Prototype [OBJECT] Modify as needed
- * Creates  GET @ /path, /path/{id}, - fetch,form for whole or for single
-            POST @ /path, /path/{id} - create & update
-            DELETE @ /path/{id} - delete for single
- */
-\Tina4\Crud::route ("[PATH]", new [OBJECT](), function ($action, [OBJECT] $[OBJECT_NAME], $filter, \Tina4\Request $request) {
-    switch ($action) {
-       case "form":
-       case "fetch":
-            //Return back a form to be submitted to the create
-             
-            if ($action == "form") {
-                $title = "Add [OBJECT]";
-                $savePath =  TINA4_SUB_FOLDER . "[PATH]";
-                $content = \Tina4\renderTemplate("[TEMPLATE_PATH]/form.twig", []);
-            } else {
-                $title = "Edit [OBJECT]";
-                $savePath =  TINA4_SUB_FOLDER . "[PATH]/".$[OBJECT_NAME]->[PRIMARY_KEY];
-                $content = \Tina4\renderTemplate("[TEMPLATE_PATH]/form.twig", ["data" => $[OBJECT_NAME]]);
-            }
-
-            return \Tina4\renderTemplate("components/modalForm.twig", ["title" => $title, "onclick" => "if ( $('#[OBJECT_NAME]Form').valid() ) { saveForm('[OBJECT_NAME]Form', '" .$savePath."', 'message'); $('#formModal').modal('hide');}", "content" => $content]);
-       break;
-       case "read":
-            //Return a dataset to be consumed by the grid with a filter
-            $where = "";
-            if (!empty($filter["where"])) {
-                $where = "{$filter["where"]}";
-            }
-        
-            return   $[OBJECT_NAME]->select ("*", $filter["length"], $filter["start"])
-                ->where("{$where}")
-                ->orderBy($filter["orderBy"])
-                ->asResult();
-        break;
-        case "create":
-            //Manipulate the $object here
-        break;
-        case "afterCreate":
-           //return needed 
-           return (object)["httpCode" => 200, "message" => "<script>[GRID_ID]Grid.ajax.reload(null, false); showMessage ('[OBJECT] Created');</script>"];
-        break;
-        case "update":
-            //Manipulate the $object here
-        break;    
-        case "afterUpdate":
-           //return needed 
-           return (object)["httpCode" => 200, "message" => "<script>[GRID_ID]Grid.ajax.reload(null, false); showMessage ('[OBJECT] Updated');</script>"];
-        break;   
-        case "delete":
-            //Manipulate the $object here
-        break;
-        case "afterDelete":
-            //return needed 
-            return (object)["httpCode" => 200, "message" => "<script>[GRID_ID]Grid.ajax.reload(null, false); showMessage ('[OBJECT] Deleted');</script>"];
-        break;
-    }
-});
-EOT;
-        $template = str_replace("[PATH]", $path, $template);
-        $template = str_replace("[OBJECT]", $className, $template);
-        $template = str_replace("[OBJECT_NAME]", $this->camelCase($className), $template);
-        $template = str_replace("[PRIMARY_KEY]", $this->primaryKey, $template);
-        $template = str_replace("[GRID_ID]", $this->camelCase($className), $template);
-        $template = str_replace("[TEMPLATE_PATH]", str_replace(DIRECTORY_SEPARATOR, "/", $path), $template);
-
-
-        $content = file_get_contents($fileName);
-
-
-        //create a crud grid and form
-        $formData = $this->getObjectData();
-
-        $tableColumns = [];
-        $tableColumnMappings = [];
-        $tableFields = [];
-        foreach ($formData as $columnName => $value) {
-            $tableColumns[] = $this->getTableColumnName($columnName);
-            $tableColumnMappings[] = $columnName;
-            $tableFields[] = ["fieldName" => $columnName, "fieldLabel" => $this->getTableColumnName($columnName)];
-        }
-
-
-        $componentPath = TINA4_DOCUMENT_ROOT . DIRECTORY_SEPARATOR . "src" . DIRECTORY_SEPARATOR . "templates" . str_replace("/", DIRECTORY_SEPARATOR, $path);
-
-
-        if (!file_exists($componentPath) && !mkdir($componentPath, 0755, true) && !is_dir($componentPath)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $componentPath));
-        }
-
-        $gridFilePath = $componentPath . DIRECTORY_SEPARATOR . "grid.twig";
-
-        $formFilePath = $componentPath . DIRECTORY_SEPARATOR . "form.twig";
-
-        //create the grid
-        $gridHtml = renderTemplate("@__main__/components/grid.twig", ["gridTitle" => $className, "gridId" => $this->camelCase($className), "primaryKey" => $this->primaryKey, "tableColumns" => $tableColumns, "tableColumnMappings" => $tableColumnMappings, "apiPath" => $path, "baseUrl" => TINA4_BASE_URL]);
-
-        file_put_contents($gridFilePath, $gridHtml);
-
-        //create the form
-        $formHtml = renderTemplate("@__main__/components/form.twig", ["formId" => $this->camelCase($className), "primaryKey" => $this->primaryKey, "tableFields" => $tableFields, "baseUrl" => TINA4_BASE_URL]);
-
-        $formHtml = str_replace("&quot;", '"', $formHtml);
-        file_put_contents($formFilePath, $formHtml);
-
-        $gridRouterCode = '
-\Tina4\Get::add("' . $path . '/landing", function (\Tina4\Response $response){
-    return $response (\Tina4\renderTemplate("' . $path . '/grid.twig"), HTTP_OK, TEXT_HTML);
-});
-        ';
-
-        $content = str_replace($callingCode, $gridRouterCode . PHP_EOL . $template, $content);
-
-        file_put_contents($fileName, $content);
+        return $this;
     }
 
     /**
@@ -1333,7 +947,7 @@ EOT;
      * @param $name
      * @return string
      */
-    function getTableColumnName($name)
+    final public function getTableColumnName($name) : string
     {
         $fieldName = "";
         for ($i = 0, $iMax = strlen($name); $i < $iMax; $i++) {
@@ -1344,5 +958,19 @@ EOT;
             }
         }
         return ucwords($fieldName);
+    }
+
+    /**
+     * Generates the create table function
+     * @param string $tableName
+     * @return string
+     * @throws \ReflectionException
+     */
+    final public function generateCreateSQL(string $tableName=""): string
+    {
+        if (empty($tableName)) {
+            $tableName = $this->tableName;
+        }
+        return (new ORMSQLGenerator())->generateCreateSQL($this->getTableData(), $tableName, $this);
     }
 }

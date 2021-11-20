@@ -4,7 +4,9 @@
   "license": "MIT",
   "autoload": {
     "classmap": [
-      "Tina4/"
+      "Tina4/",
+      "src/orm",
+      "src/orm/magic"
     ],
     "psr-4": {
       "Tina4\\": [
