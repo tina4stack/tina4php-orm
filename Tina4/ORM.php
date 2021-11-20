@@ -554,7 +554,7 @@ class ORM implements \JsonSerializable
             $ormField = $this->getObjectName($fieldName);
 
             //We ignore mapping because we want to use this to determine the virtual fields in the class
-            $databaseFields[] = $this->getFieldName($ormField, null, true);
+            $databaseFields[] = $this->getFieldName($ormField, [], true);
 
             if ($overRide) {
                 $this->{$ormField} = $fieldValue;
