@@ -12,17 +12,31 @@ namespace Tina4;
  */
 class ORMCRUDGenerator
 {
+    use ORMUtility;
+
+    private $ORM;
+
+    function __construct($ORM)
+    {
+        $this->ORM = $ORM;
+    }
+
     /**
      * Generates CRUD
      * @param string $path
      */
-    final public function generateCRUD(string $path = ""): void
+    final public function generateCRUD(string $path = "", bool $return=false): ?string
     {
-        $className = get_class($this);
+        $className = get_class($this->ORM);
         if (empty($path)) {
             $callingCode = '(new ' . $className . '())->generateCRUD();';
         } else {
-            $callingCode = '(new ' . $className . '())->generateCRUD("' . $path . '");';
+            if ($return) {
+                $callingCode = '(new ' . $className . '())->generateCRUD("' . $path . '", true);';
+            } else {
+                $callingCode = '(new ' . $className . '())->generateCRUD("' . $path . '");';
+            }
+
         }
 
         if (empty($path)) {
@@ -32,12 +46,15 @@ class ORMCRUDGenerator
             $path = str_replace(array(getcwd(), DIRECTORY_SEPARATOR . "src", ".php", DIRECTORY_SEPARATOR), array("", "", "", "/"), $path);
         }
 
-        $backTrace = debug_backtrace()[0];
+        $backTrace = debug_backtrace()[1];
+
+
         $fileName = ($backTrace["file"]);
+
         $line = $backTrace["line"];
 
         if (empty($path)) {
-            $path = str_replace(array(".php", $_SERVER["DOCUMENT_ROOT"]), "", realpath($fileName));
+           $path = str_replace(array(".php", $_SERVER["DOCUMENT_ROOT"]), "", realpath($fileName));
         }
 
         $template = <<<'EOT'
@@ -101,20 +118,28 @@ class ORMCRUDGenerator
     }
 });
 EOT;
-        $template = str_replace(array("[PATH]", "[OBJECT]", "[OBJECT_NAME]", "[PRIMARY_KEY]", "[GRID_ID]", "[TEMPLATE_PATH]"), array($path, $className, $this->camelCase($className), $this->primaryKey, $this->camelCase($className), str_replace(DIRECTORY_SEPARATOR, "/", $path)), $template);
+        $template = str_replace(array("[PATH]", "[OBJECT]", "[OBJECT_NAME]", "[PRIMARY_KEY]", "[GRID_ID]", "[TEMPLATE_PATH]"), array($path, $className, $this->camelCase($className), $this->ORM->primaryKey, $this->camelCase($className), str_replace(DIRECTORY_SEPARATOR, "/", $path)), $template);
 
         $content = file_get_contents($fileName);
 
         //create a crud grid and form
-        $formData = $this->getObjectData();
+        $formData = $this->ORM->getObjectData();
 
         $tableColumns = [];
         $tableColumnMappings = [];
         $tableFields = [];
         foreach ($formData as $columnName => $value) {
-            $tableColumns[] = $this->getTableColumnName($columnName);
+            $tableColumns[] = $this->ORM->getTableColumnName($columnName);
             $tableColumnMappings[] = $columnName;
-            $tableFields[] = ["fieldName" => $columnName, "fieldLabel" => $this->getTableColumnName($columnName)];
+            $tableFields[] = ["fieldName" => $columnName, "fieldLabel" => $this->ORM->getTableColumnName($columnName)];
+        }
+
+        if (!defined("TINA4_DOCUMENT_ROOT")) {
+            define("TINA4_DOCUMENT_ROOT", "./");
+        }
+
+        if (!defined("TINA4_BASE_URL")) {
+            define("TINA4_BASE_URL", "/");
         }
 
         $componentPath = TINA4_DOCUMENT_ROOT . DIRECTORY_SEPARATOR . "src" . DIRECTORY_SEPARATOR . "templates" . str_replace("/", DIRECTORY_SEPARATOR, $path);
@@ -128,12 +153,12 @@ EOT;
         $formFilePath = $componentPath . DIRECTORY_SEPARATOR . "form.twig";
 
         //create the grid
-        $gridHtml = renderTemplate("@__main__/components/grid.twig", ["gridTitle" => $className, "gridId" => $this->camelCase($className), "primaryKey" => $this->primaryKey, "tableColumns" => $tableColumns, "tableColumnMappings" => $tableColumnMappings, "apiPath" => $path, "baseUrl" => TINA4_BASE_URL]);
+        $gridHtml = $this->renderTemplate("@__main__/components/grid.twig", ["gridTitle" => $className, "gridId" => $this->camelCase($className), "primaryKey" => $this->ORM->primaryKey, "tableColumns" => $tableColumns, "tableColumnMappings" => $tableColumnMappings, "apiPath" => $path, "baseUrl" => TINA4_BASE_URL]);
 
         file_put_contents($gridFilePath, $gridHtml);
 
         //create the form
-        $formHtml = renderTemplate("@__main__/components/form.twig", ["formId" => $this->camelCase($className), "primaryKey" => $this->primaryKey, "tableFields" => $tableFields, "baseUrl" => TINA4_BASE_URL]);
+        $formHtml = $this->renderTemplate("@__main__/components/form.twig", ["formId" => $this->camelCase($className), "primaryKey" => $this->ORM->primaryKey, "tableFields" => $tableFields, "baseUrl" => TINA4_BASE_URL]);
 
         $formHtml = str_replace("&quot;", '"', $formHtml);
         file_put_contents($formFilePath, $formHtml);
@@ -146,6 +171,27 @@ EOT;
 
         $content = str_replace($callingCode, $gridRouterCode . PHP_EOL . $template, $content);
 
-        file_put_contents($fileName, $content);
+        if (!$return) {
+            file_put_contents($fileName, $content);
+            return null;
+        }
+
+        return $content;
+    }
+
+    /**
+     * Render a twig file or string
+     * @param string $templateName
+     * @param array $data
+     * @return string
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
+     */
+    public static function renderTemplate(string $templateName, array $data): string
+    {
+        $loader = new \Twig\Loader\FilesystemLoader(__DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'public');
+        $twig = new \Twig\Environment($loader);
+        return $twig->render($templateName, $data);
     }
 }

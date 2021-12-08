@@ -973,4 +973,22 @@ class ORM implements \JsonSerializable
         }
         return (new ORMSQLGenerator())->generateCreateSQL($this->getTableData(), $tableName, $this);
     }
+
+
+    /**
+     * Generates CRUD code
+     * @param string $path
+     * @param bool $return
+     * @return string|null
+     */
+    final public function generateCRUD(string $path, bool $return=false): ?string
+    {
+        $result = (new ORMCRUDGenerator($this))->generateCRUD($path, $return);
+
+        if (!$return) {
+            return null;
+        }
+
+        return $result;
+    }
 }

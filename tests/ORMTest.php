@@ -78,4 +78,10 @@ class ORMTest extends TestCase
 
     }
 
+    final function testGenerateCrud() : void
+    {
+        $content = (new Person())->generateCRUD("/api/person", true);
+        $this->assertStringContainsString('\Tina4\Crud::route ("/api/person", new Person(),', $content, "Not found");
+    }
+
 }
