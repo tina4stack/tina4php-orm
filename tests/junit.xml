@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests" tests="2" assertions="5" errors="0" warnings="0" failures="0" skipped="0" time="0.628557">
-    <testsuite name="ORMTest" file="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests/ORMTest.php" tests="2" assertions="5" errors="0" warnings="0" failures="0" skipped="0" time="0.628557">
-      <testcase name="testClassExists" class="ORMTest" classname="ORMTest" file="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests/ORMTest.php" line="23" assertions="1" time="0.319286"/>
-      <testcase name="testPerson" class="ORMTest" classname="ORMTest" file="/Users/andrevanzuydam/IdeaProjects/tina4php-orm/tests/ORMTest.php" line="28" assertions="4" time="0.309272"/>
+  <testsuite name="D:\projects\php\tina4php-orm\tests" tests="2" assertions="0" errors="2" warnings="0" failures="0" skipped="0" time="8.168228">
+    <testsuite name="ORMTest" file="D:\projects\php\tina4php-orm\tests\ORMTest.php" tests="2" assertions="0" errors="2" warnings="0" failures="0" skipped="0" time="8.168228">
+      <testcase name="testClassExists" class="ORMTest" classname="ORMTest" file="D:\projects\php\tina4php-orm\tests\ORMTest.php" line="23" assertions="0" time="4.087999">
+        <error type="PHPUnit\Framework\Error\Warning">ORMTest::testClassExists
+ibase_pconnect(): Unable to complete network request to host "localhost". Failed to establish a connection. 
+
+D:\projects\php\tina4php-orm\vendor\tina4stack\tina4php-firebird\Tina4\FirebirdConnection.php:31
+D:\projects\php\tina4php-orm\vendor\tina4stack\tina4php-firebird\Tina4\DataFirebird.php:40
+D:\projects\php\tina4php-orm\vendor\tina4stack\tina4php-database\Tina4\DataBaseCore.php:103
+D:\projects\php\tina4php-orm\tests\ORMTest.php:19</error>
+      </testcase>
+      <testcase name="testPerson" class="ORMTest" classname="ORMTest" file="D:\projects\php\tina4php-orm\tests\ORMTest.php" line="28" assertions="0" time="4.080229">
+        <error type="PHPUnit\Framework\Error\Warning">ORMTest::testPerson
+ibase_pconnect(): Unable to complete network request to host "localhost". Failed to establish a connection. 
+
+D:\projects\php\tina4php-orm\vendor\tina4stack\tina4php-firebird\Tina4\FirebirdConnection.php:31
+D:\projects\php\tina4php-orm\vendor\tina4stack\tina4php-firebird\Tina4\DataFirebird.php:40
+D:\projects\php\tina4php-orm\vendor\tina4stack\tina4php-database\Tina4\DataBaseCore.php:103
+D:\projects\php\tina4php-orm\tests\ORMTest.php:19</error>
+      </testcase>
     </testsuite>
   </testsuite>
 </testsuites>
