@@ -141,7 +141,11 @@ class ORMSQLGenerator
 
         if (!empty($orm->DBA) && !$keyInFieldList) {
             if (get_class($orm->DBA) === "Tina4\DataFirebird") {
-                $returningStatement = " returning (" . $orm->getFieldName($orm->primaryKey,$orm->fieldMapping) . ")";
+                $primaryKeys = explode(",", $orm->primaryKey);
+                foreach ($primaryKeys as $id => $primaryKey) {
+                    $primaryKeys[$id] = $orm->getFieldName($primaryKey,$orm->fieldMapping);
+                }
+                $returningStatement = " returning " . join($primaryKeys,",");
             } elseif (get_class($orm->DBA) === "Tina4\DataSQLite3") {
                 $returningStatement = "";
             }
