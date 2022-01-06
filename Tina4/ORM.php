@@ -402,7 +402,7 @@ class ORM implements \JsonSerializable
             throw new \Exception("No table found, please see migrations or create table using generate create SQL");
         }
 
-        if (!empty($fieldMapping) && empty($this->fieldMapping)) {
+        if (!empty($fieldMapping) && !empty($this->fieldMapping)) {
             $this->fieldMapping = $fieldMapping;
         }
 
@@ -474,7 +474,7 @@ class ORM implements \JsonSerializable
                     }
                 }
 
-                $tableData = $this->getTableData();
+                $tableData = $this->getTableData([], true);
 
                 $primaryCheck = $this->getPrimaryCheck($tableData);
 
@@ -563,9 +563,9 @@ class ORM implements \JsonSerializable
             if ($overRide) {
                 $this->{$ormField} = $fieldValue;
             } elseif (property_exists($this, $ormField)) {
-                    if ($this->{$ormField} === null && $this->{$ormField} !== "0" && $this->{$ormField} !== "") {
-                        $this->{$ormField} = $fieldValue;
-                    }
+                if ($this->{$ormField} === null && $this->{$ormField} !== "0" && $this->{$ormField} !== "") {
+                    $this->{$ormField} = $fieldValue;
+                }
             }
         }
 
