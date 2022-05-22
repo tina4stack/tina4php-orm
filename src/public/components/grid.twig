@@ -45,7 +45,7 @@
                         text: 'Create',
                         action: function (e, dt, node, config) {
                             let data = {};
-                            showForm('create', '{{ baseUrl }}{{ apiPath }}/form');
+                            showForm('create', '{{ baseUrl }}{{ apiPath }}/form?formToken={% verbatim %}{{ formToken }}{% endverbatim %}');
                         }
                     },
                     'copy', 'excel', 'pdf', 'print'
