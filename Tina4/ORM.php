@@ -330,7 +330,11 @@ class ORM implements \JsonSerializable
      */
     final public function getPrimaryCheck(array $tableData): string
     {
-        $primaryFields = explode(",", $this->primaryKey);
+        if (!is_array($this->primaryKey)) {
+            $primaryFields = explode(",", $this->primaryKey);
+        } else {
+            $primaryFields = $this->primaryKey;
+        }
 
         $primaryFieldFilter = [];
 
@@ -398,7 +402,7 @@ class ORM implements \JsonSerializable
             throw new \Exception("No table found, please see migrations or create table using generate create SQL");
         }
 
-        if (!empty($fieldMapping) && empty($this->fieldMapping)) {
+        if (!empty($fieldMapping) && !empty($this->fieldMapping)) {
             $this->fieldMapping = $fieldMapping;
         }
 
@@ -425,7 +429,7 @@ class ORM implements \JsonSerializable
         //@todo this next piece needs to standardize the errors from the different database sources - perhaps with a getNoneError on the database abstraction
         if ($exists->error->getErrorMessage() === "" || strtolower($exists->error->getErrorMessage()) === "none" || $exists->error->getErrorMessage() === "no more rows available" || $exists->error->getErrorMessage() === "unknown error") {
             if ($exists->noOfRecords === 0) { //insert
-                if (strpos($this->primaryKey, ",") !== false) {
+                if (is_array($this->primaryKey) || strpos($this->primaryKey, ",") !== false) {
                     $getLastId = false;
                 }    else {
                     $getLastId = ((string)($this->{$this->primaryKey}) === "");
@@ -470,7 +474,7 @@ class ORM implements \JsonSerializable
                     }
                 }
 
-                $tableData = $this->getTableData();
+                $tableData = $this->getTableData([], true);
 
                 $primaryCheck = $this->getPrimaryCheck($tableData);
 
@@ -559,9 +563,9 @@ class ORM implements \JsonSerializable
             if ($overRide) {
                 $this->{$ormField} = $fieldValue;
             } elseif (property_exists($this, $ormField)) {
-                    if ($this->{$ormField} === null && $this->{$ormField} !== "0" && $this->{$ormField} !== "") {
-                        $this->{$ormField} = $fieldValue;
-                    }
+                if ($this->{$ormField} === null && $this->{$ormField} !== "0" && $this->{$ormField} !== "") {
+                    $this->{$ormField} = $fieldValue;
+                }
             }
         }
 
