@@ -39,7 +39,7 @@ class ORM implements \JsonSerializable
     public $tableName = ""; //Used to set the table name for an object that doesn't look like the table in question
 
     /**
-     * @var null The database connection, if it is null it will look for global $DBA variable
+     * @var \Tina4\Database The database connection, if it is null it will look for global $DBA variable
      * @example examples\exampleORMDBAConnection.php
      */
     public $DBA = null; //Specify a database connection
@@ -370,7 +370,7 @@ class ORM implements \JsonSerializable
 
             $fieldName = $this->getFieldName($fieldName);
 
-            $sql = "update {$tableName} set {$fieldName} = ? where {$primaryCheck}";
+            $sql = "update {$tableName} set {$fieldName} = ".$this->DBA->getQueryParam($fieldName,1)." where {$primaryCheck}";
 
             $this->DBA->exec($sql, $content);
 
