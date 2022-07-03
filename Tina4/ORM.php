@@ -205,16 +205,14 @@ class ORM implements \JsonSerializable
     final public function saveFile(string $fieldName, string $fileInputName): bool
     {
         $tableName = $this->getTableName();
-
         $tableData = $this->getTableData();
-
         if (!empty($_FILES) && isset($_FILES[$fileInputName])) {
             if ($_FILES[$fileInputName]["error"] === 0) {
                 $primaryCheck = $this->getPrimaryCheck($tableData);
 
                 $fieldName = $this->getFieldName($fieldName);
 
-                $sql = "update {$tableName} set {$fieldName} = ? where {$primaryCheck}";
+                $sql = "update {$tableName} set {$fieldName} = ".$this->DBA->getQueryParam($fieldName, 1)." where {$primaryCheck}";
 
                 $this->DBA->exec($sql, file_get_contents($_FILES[$fileInputName]["tmp_name"]));
 
