@@ -212,7 +212,7 @@ class ORM implements \JsonSerializable
 
                 $fieldName = $this->getFieldName($fieldName);
 
-                $sql = "update {$tableName} set {$fieldName} = ".$this->DBA->getQueryParam($fieldName, 1)." where {$primaryCheck}";
+                $sql = "update {$tableName} set {$fieldName} = " . $this->DBA->getQueryParam($fieldName, 1) . " where {$primaryCheck}";
 
                 $this->DBA->exec($sql, file_get_contents($_FILES[$fileInputName]["tmp_name"]));
 
@@ -259,9 +259,14 @@ class ORM implements \JsonSerializable
             return $name;
         }
 
-        if (!empty($fieldMapping) && isset($fieldMapping[$name]) && !$ignoreMapping) {
+        if (!empty($fieldMapping) && !$ignoreMapping) {
+            if (isset($fieldMapping[$name])) {
+                return ($fieldMapping[$name]);
+            }
 
-            return ($fieldMapping[$name]);
+            if (array_key_exists(explode(" ", trim($name))[0], array_flip($fieldMapping))) {
+                return $name;
+            }
         }
 
         $fieldName = "";
@@ -368,7 +373,7 @@ class ORM implements \JsonSerializable
 
             $fieldName = $this->getFieldName($fieldName);
 
-            $sql = "update {$tableName} set {$fieldName} = ".$this->DBA->getQueryParam($fieldName,1)." where {$primaryCheck}";
+            $sql = "update {$tableName} set {$fieldName} = " . $this->DBA->getQueryParam($fieldName, 1) . " where {$primaryCheck}";
 
             $this->DBA->exec($sql, $content);
 
@@ -429,7 +434,7 @@ class ORM implements \JsonSerializable
             if ($exists->noOfRecords === 0) { //insert
                 if (is_array($this->primaryKey) || strpos($this->primaryKey, ",") !== false) {
                     $getLastId = false;
-                }    else {
+                } else {
                     $getLastId = ((string)($this->{$this->primaryKey}) === "");
                 }
                 $sqlStatement = (new ORMSQLGenerator())->generateInsertSQL($tableData, $tableName, $this);
@@ -519,8 +524,7 @@ class ORM implements \JsonSerializable
             return false;
         }
 
-        if ($this->DBA->isNoSQL())
-        {
+        if ($this->DBA->isNoSQL()) {
             return true; //NoSQL databases do not need table to exist
         }
 
@@ -647,6 +651,7 @@ class ORM implements \JsonSerializable
                 $tableData[$fieldName] = $value;
             }
         }
+
         return $tableData;
     }
 
@@ -689,11 +694,12 @@ class ORM implements \JsonSerializable
             }
 
             $sql = "update {$tableName} set is_deleted = 1 where {$filter}";
-            $error = $this->DBA->exec ($sql);
+            $error = $this->DBA->exec($sql);
         }
 
         if (empty($error->getError()["errorCode"])) {
             $this->DBA->commit();
+
             return (object)["success" => true];
         } else {
             return (object)$error->getError();
@@ -704,7 +710,7 @@ class ORM implements \JsonSerializable
      * Gets the field definitions for the table
      * @return array
      */
-    final public function getFieldDefinitions() : array
+    final public function getFieldDefinitions(): array
     {
         $tableName = strtolower($this->getTableName());
 
@@ -949,7 +955,7 @@ class ORM implements \JsonSerializable
      * @param $name
      * @return string
      */
-    final public function getTableColumnName($name) : string
+    final public function getTableColumnName($name): string
     {
         $fieldName = "";
         for ($i = 0, $iMax = strlen($name); $i < $iMax; $i++) {
@@ -959,6 +965,7 @@ class ORM implements \JsonSerializable
                 $fieldName .= $name[$i];
             }
         }
+
         return ucwords($fieldName);
     }
 
@@ -968,11 +975,12 @@ class ORM implements \JsonSerializable
      * @return string
      * @throws \ReflectionException
      */
-    final public function generateCreateSQL(string $tableName=""): string
+    final public function generateCreateSQL(string $tableName = ""): string
     {
         if (empty($tableName)) {
             $tableName = $this->tableName;
         }
+
         return (new ORMSQLGenerator())->generateCreateSQL($this->getTableData(), $tableName, $this);
     }
 
@@ -983,7 +991,7 @@ class ORM implements \JsonSerializable
      * @param bool $return
      * @return string|null
      */
-    final public function generateCRUD(string $path, bool $return=false): ?string
+    final public function generateCRUD(string $path, bool $return = false): ?string
     {
         $result = (new ORMCRUDGenerator($this))->generateCRUD($path, $return);
 
