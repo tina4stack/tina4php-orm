@@ -19,10 +19,15 @@ trait ORMUtility
     final public function getObjectName(string $name, bool $camelCase = false): string
     {
         if (isset($this->fieldMapping) && !empty($this->fieldMapping)) {
-            $fieldMap = array_change_key_case(array_flip($this->fieldMapping), CASE_LOWER);
+            $flippedFieldMap = array_flip($this->fieldMapping);
+            $fieldMap = array_change_key_case($flippedFieldMap, CASE_LOWER);
 
             if (isset($fieldMap[$name])) {
                 return $fieldMap[$name];
+            }
+
+            if (isset($flippedFieldMap[$name])) {
+                return $flippedFieldMap[$name];
             }
 
             if (!$camelCase) {
@@ -58,6 +63,7 @@ trait ORMUtility
                 $fieldName .= $name[$i];
             }
         }
+
         return $fieldName;
     }
 
