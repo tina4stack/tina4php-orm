@@ -259,13 +259,26 @@ class ORM implements \JsonSerializable
             return $name;
         }
 
+        // Check if a field map was parsed and that it mustn't be ignored
         if (!empty($fieldMapping) && !$ignoreMapping) {
-            if (isset($fieldMapping[$name])) {
-                return ($fieldMapping[$name]);
+            $prefix = '';
+
+            // Check if the parsed name has a prefix (e.g t.column_name)
+            if (strpos($name, ".")) {
+                $parts = explode('.', $name, 2);
+                $prefix = "{$parts[0]}.";
+                $name = $parts[1];
             }
 
+            // Check if the column needs to be mapped from the ORM value
+            if (isset($fieldMapping[$name])) {
+                return ($prefix . $fieldMapping[$name]);
+            }
+
+            // Check if the column has already been mapped.
+            // explode is used for ordering (e.g. column_name desc)
             if (array_key_exists(explode(" ", trim($name))[0], array_flip($fieldMapping))) {
-                return $name;
+                return $prefix . $name;
             }
         }
 
@@ -430,7 +443,7 @@ class ORM implements \JsonSerializable
         $getLastId = false;
 
         //@todo this next piece needs to standardize the errors from the different database sources - perhaps with a getNoneError on the database abstraction
-        if ($exists->error->getErrorMessage() === "" || strtolower($exists->error->getErrorMessage()) === "none" || $exists->error->getErrorMessage() === "no more rows available" || $exists->error->getErrorMessage() === "unknown error") {
+        if ($exists->error->getErrorMessage() === "" || in_array(strtolower($exists->error->getErrorMessage()), ["none", "no more rows available", "unknown error", "not an error"])) {
             if ($exists->noOfRecords === 0) { //insert
                 if (is_array($this->primaryKey) || strpos($this->primaryKey, ",") !== false) {
                     $getLastId = false;
@@ -457,7 +470,7 @@ class ORM implements \JsonSerializable
                 $error = $returning->error;
             }
 
-            if (empty($error->getErrorMessage()) || $error->getErrorMessage() === "not an error") {
+            if (empty($error->getErrorMessage()) || in_array(strtolower($exists->error->getErrorMessage()), ["none", "not an error"])) {
                 $this->DBA->commit();
 
                 //get last id
