@@ -259,13 +259,26 @@ class ORM implements \JsonSerializable
             return $name;
         }
 
+        // Check if a field map was parsed and that it mustn't be ignored
         if (!empty($fieldMapping) && !$ignoreMapping) {
-            if (isset($fieldMapping[$name])) {
-                return ($fieldMapping[$name]);
+            $prefix = '';
+
+            // Check if the parsed name has a prefix (e.g t.column_name)
+            if (strpos($name, ".")) {
+                $parts = explode('.', $name, 2);
+                $prefix = "{$parts[0]}.";
+                $name = $parts[1];
             }
 
+            // Check if the column needs to be mapped from the ORM value
+            if (isset($fieldMapping[$name])) {
+                return ($prefix . $fieldMapping[$name]);
+            }
+
+            // Check if the column has already been mapped.
+            // explode is used for ordering (e.g. column_name desc)
             if (array_key_exists(explode(" ", trim($name))[0], array_flip($fieldMapping))) {
-                return $name;
+                return $prefix . $name;
             }
         }
 
