@@ -198,8 +198,8 @@ class ORM implements \JsonSerializable
 
     /**
      * Saves a file into the database
-     * @param $fieldName
-     * @param $fileInputName
+     * @param string $fieldName
+     * @param string $fileInputName
      * @return bool
      */
     final public function saveFile(string $fieldName, string $fileInputName): bool
@@ -232,7 +232,7 @@ class ORM implements \JsonSerializable
     /**
      * Works out the table name from the class name
      * @param string $tableName The class name
-     * @return string|null Returns the name of the table or null if it does not fit the if statements criteria
+     * @return string Returns the name of the table or null if it does not fit the if statements criteria
      */
     final public function getTableName(string $tableName = ""): string
     {
@@ -251,7 +251,7 @@ class ORM implements \JsonSerializable
      * @param string $name Name of field required
      * @param array $fieldMapping Array of field mapping
      * @param bool $ignoreMapping Ignore the field mapping
-     * @return string Required field name from database
+     * @return string|null Required field name from database
      */
     final public function getFieldName(string $name, array $fieldMapping = [], bool $ignoreMapping = false): ?string
     {
@@ -470,7 +470,8 @@ class ORM implements \JsonSerializable
                 $error = $returning->error;
             }
 
-            if (empty($error->getErrorMessage()) || in_array(strtolower($exists->error->getErrorMessage()), ["none", "not an error"])) {
+
+            if (empty($error->getErrorMessage()) || in_array(strtolower($error->getErrorMessage()), ["none", "not an error"])) {
                 $this->DBA->commit();
 
                 //get last id
@@ -723,13 +724,17 @@ class ORM implements \JsonSerializable
      * Gets the field definitions for the table
      * @return array
      */
-    final public function getFieldDefinitions(): array
+    final public function getFieldDefinitions()
     {
         $tableName = strtolower($this->getTableName());
+
+
 
         if ($this->DBA !== null) {
             return $this->DBA->getDatabase()[$tableName];
         }
+
+
 
         return [];
     }
@@ -763,14 +768,15 @@ class ORM implements \JsonSerializable
     }
 
     /**
-     * Alias of load just with different parameter order for neatness
+     * Alias of load just with Object field names mapped instead of db //you could use firstName = ? instead of db name first_name = ?
      * @param string $filter
+     * @param array $params
      * @param string $tableName Name of the table
      * @param array $fieldMapping Array of field mapping
      * @return bool
      * @throws Exception Error on failure
      */
-    final public function find($filter = "", $tableName = "", $fieldMapping = [])
+    final public function find(string $filter = "", array $params=[], $tableName = "", $fieldMapping = [])
     {
         //Translate filter
         $data = $this->getTableData($fieldMapping);
@@ -780,19 +786,20 @@ class ORM implements \JsonSerializable
             $filter = str_replace($objectName, $fieldName, $filter);
         }
 
-        return $this->load($filter, $tableName, $fieldMapping);
+        return $this->load($filter, $params, $tableName, $fieldMapping);
     }
 
     /**
      * Loads the record from the database into the object
-     * @param string $filter The criteria of what you are searching for to load e.g. "id = 2"
+     * @param string $filter The criteria of what you are searching for to load e.g. "id = 2" or "id = ?"
+     * @param array $params The mapping fields to the filter
      * @param string $tableName Name of the table
      * @param array $fieldMapping Array of field mapping for the table
      * @return ORM|bool True on success, false on failure to load
      * @throws Exception Error on failure
      * @example examples\exampleORMLoadData.php for loading table row data
      */
-    final public function load($filter = "", $tableName = "", $fieldMapping = [])
+    final public function load(string $filter = "", array $params=[], string $tableName="", array $fieldMapping=[])
     {
         if (!empty($fieldMapping) && empty($this->fieldMapping)) {
             $this->fieldMapping = $fieldMapping;
@@ -807,6 +814,21 @@ class ORM implements \JsonSerializable
         }
 
         if (!empty($filter)) {
+            //add params to filter
+            foreach ($params as $pid => $param) {
+                //check param for injection
+                //@todo check for SQL injection?
+                if (!$this->isDate($param, $this->DBA->getDefaultDatabaseDateFormat())) {
+                    $param = filter_var($param, FILTER_DEFAULT);
+                }
+
+                if (is_string($param)) {
+                    $filter = preg_replace('/\?/', "'{$param}'", $filter, 1);
+                } else {
+                    $filter = preg_replace('/\?/', "{$param}", $filter, 1);
+                }
+            }
+
             $sqlStatement = "select * from {$tableName} where {$filter}";
         } else {
             $tableData = $this->getTableData($fieldMapping, true);
