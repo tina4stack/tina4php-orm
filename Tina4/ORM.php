@@ -594,7 +594,7 @@ class ORM implements \JsonSerializable
     }
 
     /**
-     * Returns back a list of field names on the ORM
+     * Returns a list of field names on the ORM
      * @return array
      */
     final public function getFieldNames(): array
@@ -672,12 +672,13 @@ class ORM implements \JsonSerializable
     /**
      * Deletes the record from the database
      * @param string $filter The criteria of what you are searching for to delete e.g. "id = 2"
+     * @param array $params Array of values to use for delete method
      * @param string $tableName Name of the table
      * @param array $fieldMapping Array of field mapping
      * @return object
      * @throws \Exception Error on failure
      */
-    final public function delete(string $filter = "", string $tableName = "", array $fieldMapping = [])
+    final public function delete(string $filter = "", $params= [], string $tableName = "", array $fieldMapping = [])
     {
         if (empty($tableName)) {
             $tableName = $this->tableName;
@@ -691,6 +692,8 @@ class ORM implements \JsonSerializable
         if (empty($filter)) {
             $filter = $this->getPrimaryCheck($tableData);
         }
+
+        $filter = $this->parseFilter($filter, $params);
 
         $sqlStatement = (new ORMSQLGenerator())->generateDeleteSQL($filter, $tableName);
 
@@ -721,20 +724,42 @@ class ORM implements \JsonSerializable
     }
 
     /**
+     * Parse filter based on params
+     * @param $filter
+     * @param $params
+     * @return array|mixed|string|string[]|null
+     */
+    final public function parseFilter ($filter, $params) {
+        if (!empty($filter) && !empty($params)) {
+            //add params to filter
+            foreach ($params as $param) {
+                //check param for injection
+                //@todo check for SQL injection?
+                if (!$this->isDate($param, $this->DBA->getDefaultDatabaseDateFormat())) {
+                    $param = filter_var($param, FILTER_DEFAULT);
+                }
+
+                if (is_string($param)) {
+                    $filter = preg_replace('/\?/', "'{$param}'", $filter, 1);
+                } else {
+                    $filter = preg_replace('/\?/', "{$param}", $filter, 1);
+                }
+            }
+        }
+
+        return $filter;
+    }
+
+    /**
      * Gets the field definitions for the table
      * @return array
      */
     final public function getFieldDefinitions()
     {
         $tableName = strtolower($this->getTableName());
-
-
-
         if ($this->DBA !== null) {
             return $this->DBA->getDatabase()[$tableName];
         }
-
-
 
         return [];
     }
@@ -814,20 +839,7 @@ class ORM implements \JsonSerializable
         }
 
         if (!empty($filter)) {
-            //add params to filter
-            foreach ($params as $pid => $param) {
-                //check param for injection
-                //@todo check for SQL injection?
-                if (!$this->isDate($param, $this->DBA->getDefaultDatabaseDateFormat())) {
-                    $param = filter_var($param, FILTER_DEFAULT);
-                }
-
-                if (is_string($param)) {
-                    $filter = preg_replace('/\?/', "'{$param}'", $filter, 1);
-                } else {
-                    $filter = preg_replace('/\?/', "{$param}", $filter, 1);
-                }
-            }
+            $filter = $this->parseFilter($filter, $params);
 
             $sqlStatement = "select * from {$tableName} where {$filter}";
         } else {
