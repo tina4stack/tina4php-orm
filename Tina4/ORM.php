@@ -739,6 +739,9 @@ class ORM implements \JsonSerializable
                     $param = filter_var($param, FILTER_DEFAULT);
                 }
 
+                //check for single quotes and escape
+                $param = str_replace("'", "''", $param);
+
                 if (is_string($param)) {
                     $filter = preg_replace('/\?/', "'{$param}'", $filter, 1);
                 } else {
