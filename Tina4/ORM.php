@@ -402,8 +402,8 @@ class ORM extends \stdClass implements \JsonSerializable
      * Save the data populated into the object to the provided data connection
      * @param string $tableName Name of the table if default not wanted
      * @param array $fieldMapping Array of field mapping if defaults not used
-     * @return object Result set
-     * @throws \Exception Error on failure
+     * @return ORM|bool Result set
+     * @throws \Exception|\Psr\Cache\InvalidArgumentException Error on failure
      * @example examples\exampleORMGenerateInsertSQL.php For insert of database row
      * @example examples\exampleORMGenerateUpdateSQL.php For update of database row
      * @example examples\exampleORMCreateTriggerUsingGenerateUpdateSQL.php For creating an external database trigger
@@ -504,7 +504,7 @@ class ORM extends \stdClass implements \JsonSerializable
 
                     return $this;
                 } else {
-                    return null;
+                    return false;
                 }
             } else {
                 //$this->getDebugBackTrace();
