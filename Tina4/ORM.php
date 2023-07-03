@@ -168,8 +168,8 @@ class ORM extends \stdClass implements \JsonSerializable
         }
 
         if ($request) {
-            if (!is_array($request) && !is_object($request) && json_decode((string)$request, true)) {
-                $request = json_decode((string)$request, true);
+            if (!is_array($request) && !is_object($request) && json_decode((string)$request)) {
+                $request = json_decode((string)$request);
 
                 foreach ($request as $key => $value) {
                     if (!property_exists($this, $key)) { //Add to virtual and excluded fields anything that isn't in the object
