@@ -129,7 +129,7 @@ class ORM extends \stdClass implements \JsonSerializable
      */
     final public function create($request = null, bool $fromDB = false, string $tableName = "", array $fieldMapping = [], string $primaryKey = "", string $tableFilter = "", $DBA = null): void
     {
-        if (!empty($request) && !is_object($request) && !is_array($request) && !json_decode($request, true)) {
+        if (!empty($request) && !is_object($request) && !is_array($request) && !json_decode($request)) {
             throw new \Exception("Input is not an array or object");
         }
 
