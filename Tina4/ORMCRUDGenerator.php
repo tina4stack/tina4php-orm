@@ -198,7 +198,13 @@ EOT;
      */
     public static function renderTemplate(string $templateName, array $data): string
     {
-        $loader = new \Twig\Loader\FilesystemLoader(__DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'public');
+        $componentPath = realpath("./src/public");
+
+        if (!file_exists($componentPath."/components")) {
+            $componentPath = __DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'public';
+        }
+
+        $loader = new \Twig\Loader\FilesystemLoader($componentPath);
         $twig = new \Twig\Environment($loader);
         return $twig->render($templateName, $data);
     }
