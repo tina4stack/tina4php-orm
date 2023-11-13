@@ -51,10 +51,8 @@ class ORMCRUDGenerator
 
         $fileName = ($backTrace["file"]);
 
-        $line = $backTrace["line"];
-
         if (empty($path)) {
-           $path = str_replace(array(".php", $_SERVER["DOCUMENT_ROOT"]), "", realpath($fileName));
+            $path = str_replace(array(".php", $_SERVER["DOCUMENT_ROOT"]), "", realpath($fileName));
         }
 
         $template = <<<'EOT'
@@ -135,22 +133,21 @@ EOT;
         }
 
         if (!defined("TINA4_DOCUMENT_ROOT")) {
-            define("TINA4_DOCUMENT_ROOT", "./");
+            define("TINA4_DOCUMENT_ROOT", ".");
         }
 
         if (!defined("TINA4_BASE_URL")) {
-            define("TINA4_BASE_URL", "/");
+            define("TINA4_BASE_URL", "");
         }
 
-        $componentPath = TINA4_DOCUMENT_ROOT . DIRECTORY_SEPARATOR . "src" . DIRECTORY_SEPARATOR . "templates" . str_replace("/", DIRECTORY_SEPARATOR, $path);
+        $outputPath = str_replace(DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR, TINA4_DOCUMENT_ROOT . DIRECTORY_SEPARATOR . "src" . DIRECTORY_SEPARATOR . "templates" . str_replace("/", DIRECTORY_SEPARATOR, $path));
 
-        if (!file_exists($componentPath) && !mkdir($componentPath, 0755, true) && !is_dir($componentPath)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $componentPath));
+        if (!file_exists($outputPath) && !mkdir($outputPath, 0755, true) && !is_dir($outputPath)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $outputPath));
         }
 
-        $gridFilePath = $componentPath . DIRECTORY_SEPARATOR . "grid.twig";
-
-        $formFilePath = $componentPath . DIRECTORY_SEPARATOR . "form.twig";
+        $gridFilePath = $outputPath . DIRECTORY_SEPARATOR . "grid.twig";
+        $formFilePath = $outputPath . DIRECTORY_SEPARATOR . "form.twig";
 
         //create the grid
         $gridHtml = $this->renderTemplate("@__main__/components/grid.twig", ["gridTitle" => $className, "gridId" => $this->camelCase($className), "primaryKey" => $this->ORM->primaryKey, "tableColumns" => $tableColumns, "tableColumnMappings" => $tableColumnMappings, "apiPath" => $path, "baseUrl" => TINA4_BASE_URL]);
@@ -173,6 +170,17 @@ EOT;
 
         if (!$return) {
             file_put_contents($fileName, $content);
+
+            //check for files that are needed by the CRUD routing and copy them into the project
+            $componentFolder = "./src/public/components";
+            if (!file_exists($componentFolder)) {
+                $cssFolder = "./src/public/css";
+                $jsFolder = "./src/public/js";
+                \Tina4\Utilities::recurseCopy(__DIR__ .DIRECTORY_SEPARATOR. "..". DIRECTORY_SEPARATOR ."src". DIRECTORY_SEPARATOR . "public" . DIRECTORY_SEPARATOR . "components", $componentFolder);
+                \Tina4\Utilities::recurseCopy(__DIR__ .DIRECTORY_SEPARATOR. "..". DIRECTORY_SEPARATOR ."src". DIRECTORY_SEPARATOR . "public" . DIRECTORY_SEPARATOR . "css", $cssFolder);
+                \Tina4\Utilities::recurseCopy(__DIR__ .DIRECTORY_SEPARATOR. "..". DIRECTORY_SEPARATOR ."src". DIRECTORY_SEPARATOR . "public" . DIRECTORY_SEPARATOR . "js", $jsFolder);
+            }
+
             return null;
         }
 
