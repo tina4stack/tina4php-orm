@@ -121,7 +121,7 @@ class ORM extends \stdClass implements \JsonSerializable
      * @param mixed $request
      * @param boolean $fromDB True or false - is data from the database
      * @param string $tableName
-     * @param string $fieldMapping
+     * @param array $fieldMapping
      * @param string $primaryKey
      * @param string $tableFilter
      * @param null $DBA
@@ -371,8 +371,8 @@ class ORM extends \stdClass implements \JsonSerializable
 
     /**
      * Saves binary content to a field in the table
-     * @param $fieldName
-     * @param $content
+     * @param string $fieldName
+     * @param string $content
      * @return bool
      */
     final public function saveBlob(string $fieldName, string $content): bool
