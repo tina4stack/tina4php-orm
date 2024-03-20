@@ -18,7 +18,12 @@
         $(document).ready(function () {
             {{ gridId }}Grid = $('#{{ gridId }}Grid').DataTable({
                 dom: '<"row"<"col-md-6"B><"col-md-4"f><"col-md-2"l>><rtip>',
-                ajax: '{{ baseUrl }}{{ apiPath }}?formToken={% verbatim %}{{ formToken ("{% endverbatim %}{{ apiPath}}{% verbatim %}") }}{% endverbatim %}',
+                ajax: {
+                        url: '{{ baseUrl }}{{ apiPath }}',
+                        data: function (d) {
+                            d.formToken = formToken;
+                        }
+                },
                 columns: [
                     {% for column in tableColumnMappings %}
                     {"data": "{{ column }}"},
