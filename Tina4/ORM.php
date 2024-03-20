@@ -736,7 +736,7 @@ class ORM extends \stdClass implements \JsonSerializable
                 //check param for injection
                 //@todo check for SQL injection?
                 if (!$this->isDate($param, $this->DBA->getDefaultDatabaseDateFormat())) {
-                    $param = filter_var($param, FILTER_DEFAULT);
+                    $param = filter_var($param, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 }
 
                 //check for single quotes and escape
