@@ -18,6 +18,10 @@ class ORM extends \stdClass implements \JsonSerializable
     use ORMUtility;
     use DataUtility;
 
+    public $batchSize = 100;
+    public $batchCount = 0;
+    public $batchStarted = false;
+
     /**
      * @var string The primary key fields in the table, can have more than one separated by comma e.g. store_id,company_id
      */
@@ -194,6 +198,31 @@ class ORM extends \stdClass implements \JsonSerializable
                 }
             }
         }
+    }
+
+
+    public function setBatchSize(int $batchSize = 100): ORM
+    {
+        $this->batchSize = $batchSize;
+
+        return $this;
+    }
+
+    public function startBatch(int $batchSize = 100): ORM
+    {
+        $this->batchSize = $batchSize;
+        $this->batchStarted = true;
+
+        return $this;
+    }
+
+    public function endBatch(): ORM
+    {
+        $this->batchStarted = false;
+
+        //Save all the records
+    
+        return $this;
     }
 
     /**
