@@ -16,11 +16,11 @@ class ORMSQLGenerator
      * Generate SQL for creating a table
      * @param array $tableData
      * @param string $tableName
-     * @param $orm
+     * @param ORM|null $orm
      * @return string
      * @throws \ReflectionException
      */
-    final public function generateCreateSQL(array $tableData, string $tableName = "", $orm=null): string
+    final public function generateCreateSQL(array $tableData, string $tableName = "", ORM $orm=null): string
     {
         $className = get_class($orm);
         $fields = [];
@@ -61,11 +61,10 @@ class ORMSQLGenerator
      * Generates an insert statement
      * @param array $tableData Array of table data
      * @param string $tableName Name of the table
-     * @param $orm
+     * @param ORM $orm
      * @return array Generated insert query
-     * @throws \Exception Error on failure
      */
-    final public function generateInsertSQL(array $tableData, string $tableName, $orm): array
+    final public function generateInsertSQL(array $tableData, string $tableName, ORM $orm): array
     {
         $insertColumns = [];
 
@@ -108,6 +107,10 @@ class ORMSQLGenerator
 
             if (is_null($fieldValue)) {
                 $fieldValue = "null";
+            }
+
+            if (is_array($fieldValue) || is_object($fieldValue)) {
+                $fieldValue = json_encode($fieldValue);
             }
 
             if ($fieldValue === "null" || (is_numeric($fieldValue) && !gettype($fieldValue) === "string")) {
@@ -174,10 +177,10 @@ class ORMSQLGenerator
      * @param array $tableData Array of table data
      * @param string $filter The criteria of what you are searching for to update e.g. "id = 2"
      * @param string $tableName Name of the table
-     * @param $orm
+     * @param ORM $orm
      * @return array Generated update query
      */
-    final public function generateUpdateSQL(array $tableData, string $filter, string $tableName, $orm): array
+    final public function generateUpdateSQL(array $tableData, string $filter, string $tableName, ORM $orm): array
     {
         $fieldValues = [];
         $updateValues = [];
@@ -201,6 +204,10 @@ class ORMSQLGenerator
             if (is_null($fieldValue)) {
                 //$updateValues[] = "{$fieldName} = null";
                 continue;
+            }
+
+            if (is_array($fieldValue) || is_object($fieldValue)) {
+                $fieldValue = json_encode($fieldValue);
             }
 
             $fieldIndex++;

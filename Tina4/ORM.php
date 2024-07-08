@@ -200,15 +200,24 @@ class ORM extends \stdClass implements \JsonSerializable
         }
     }
 
-
-    public function setBatchSize(int $batchSize = 100): ORM
+    /**
+     * Sets the batch size for execute statements
+     * @param int $batchSize
+     * @return $this
+     */
+    final public function setBatchSize(int $batchSize = 100): ORM
     {
         $this->batchSize = $batchSize;
 
         return $this;
     }
 
-    public function startBatch(int $batchSize = 100): ORM
+    /**
+     * Starts a batch
+     * @param int $batchSize
+     * @return $this
+     */
+    final public function startBatch(int $batchSize = 100): ORM
     {
         $this->batchSize = $batchSize;
         $this->batchStarted = true;
@@ -216,7 +225,11 @@ class ORM extends \stdClass implements \JsonSerializable
         return $this;
     }
 
-    public function endBatch(): ORM
+    /**
+     * End of the batch which triggers an insert or update statement
+     * @return $this
+     */
+    final public function endBatch(): ORM
     {
         $this->batchStarted = false;
 
@@ -652,7 +665,7 @@ class ORM extends \stdClass implements \JsonSerializable
      * @param bool $isObject
      * @return array
      */
-    public function jsonSerialize(bool $isObject = false): array
+    final public function jsonSerialize(bool $isObject = false): array
     {
         return $this->getObjectData($isObject);
     }
