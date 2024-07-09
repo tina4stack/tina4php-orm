@@ -101,7 +101,7 @@ class ORM extends \stdClass implements \JsonSerializable
     /**
      * @var string[] Fields that do not need to be returned in the resulting ORM object serialization
      */
-    public $protectedFields = ["databaseGlobal", "primaryKey", "genPrimaryKey", "PHPSESSID", "phpsessid", "virtualFields", "tableFilter", "DBA", "tableName", "fieldMapping", "protectedFields", "hasOne", "hasMany", "hasManyLimit", "excludeFields", "readOnlyFields", "filterMethod", "softDelete"];
+    public $protectedFields = ["batchSize", "batchCount", "batchStarted", "databaseGlobal",  "primaryKey", "genPrimaryKey", "PHPSESSID", "phpsessid", "virtualFields", "tableFilter", "DBA", "tableName", "fieldMapping", "protectedFields", "hasOne", "hasMany", "hasManyLimit", "excludeFields", "readOnlyFields", "filterMethod", "softDelete"];
 
     /**
      * ORM constructor.
@@ -1093,4 +1093,7 @@ class ORM extends \stdClass implements \JsonSerializable
 
         return $result;
     }
+
+
+
 }
