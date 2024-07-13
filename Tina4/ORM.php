@@ -799,11 +799,15 @@ class ORM extends \stdClass implements \JsonSerializable
      * Gets the field definitions for the table
      * @return array
      */
-    final public function getFieldDefinitions()
+    final public function getFieldDefinitions(): array
     {
         $tableName = strtolower($this->getTableName());
         if ($this->DBA !== null) {
-            return $this->DBA->getDatabase()[$tableName];
+            if (!empty($this->DBA->getDatabase()[$tableName])) {
+                return $this->DBA->getDatabase()[$tableName];
+            }
+
+            return [];
         }
 
         return [];
