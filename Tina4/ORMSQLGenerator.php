@@ -20,7 +20,7 @@ class ORMSQLGenerator
      * @return string
      * @throws \ReflectionException
      */
-    final public function generateCreateSQL(array $tableData, string $tableName = "", ORM $orm=null): string
+    final public function generateCreateSQL(array $tableData, string $tableName = "", ?ORM $orm=null): string
     {
         $className = get_class($orm);
         $fields = [];
