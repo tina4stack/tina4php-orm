@@ -181,7 +181,7 @@ class ORM extends \stdClass implements \JsonSerializable
                         $this->excludeFields[] = $key;
                     }
 
-                    if ($this->isDate($value, $this->DBA->getDefaultDatabaseDateFormat()) && $this->isIsoDate($value)) {
+                    if ($this->isIsoDate($value)) {
                         $value = $this->isoToNormalDate($value, $this->DBA->getDefaultDatabaseDateFormat());
                     }
 
@@ -196,7 +196,7 @@ class ORM extends \stdClass implements \JsonSerializable
                         $key = $this->getObjectName($key, $fromDB);
                     }
 
-                    if ($this->isDate($value, $this->DBA->getDefaultDatabaseDateFormat()) && $this->isIsoDate($value)) {
+                    if ($this->isIsoDate($value)) {
                         $value = $this->isoToNormalDate($value, $this->DBA->getDefaultDatabaseDateFormat());
                     }
 
