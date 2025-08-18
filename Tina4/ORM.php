@@ -180,12 +180,24 @@ class ORM extends \stdClass implements \JsonSerializable
                         $this->virtualFields[] = $key;
                         $this->excludeFields[] = $key;
                     }
+
+                    if ($this->isDate($value, $this->DBA->getDefaultDatabaseDateFormat()) && $this->isIsoDate($value)) {
+                        $value = $this->isoToNormalDate($value, $this->DBA->getDefaultDatabaseDateFormat());
+                    }
+
                     $this->{$key} = $value;
                 }
+
             } else {
                 foreach ($request as $key => $value) {
-                    if ($fromDB) { //map fields like first_name to firstName
+                    //map fields like first_name to firstName
+
+                    if ($fromDB) {
                         $key = $this->getObjectName($key, $fromDB);
+                    }
+
+                    if ($this->isDate($value, $this->DBA->getDefaultDatabaseDateFormat()) && $this->isIsoDate($value)) {
+                        $value = $this->isoToNormalDate($value, $this->DBA->getDefaultDatabaseDateFormat());
                     }
 
                     if (property_exists($this, $key)) {
@@ -234,7 +246,7 @@ class ORM extends \stdClass implements \JsonSerializable
         $this->batchStarted = false;
 
         //Save all the records
-    
+
         return $this;
     }
 
