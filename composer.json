@@ -17,7 +17,7 @@
     "phpunit/phpunit": "^9",
     "overtrue/phplint": "^2.0",
     "tina4stack/tina4php-firebird": "^2.0",
-    "phpmetrics/phpmetrics": "^0.0.1"
+    "phpmetrics/phpmetrics": "^2.8"
   },
   "scripts": {
     "test": "./vendor/bin/phpunit tests --color --log-junit=tests/junit.xml",
