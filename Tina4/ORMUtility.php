@@ -51,13 +51,19 @@ trait ORMUtility
 
     /**
      * Return a camel cased version of the name
+     * Delegates to the canonical implementation in \Tina4\Utilities (tina4php-core)
      * @param string $name A field name or object name with underscores
      * @return string Camel case version of the input
+     * @see \Tina4\Utility::camelCase()
      */
     final public function camelCase(string $name): string
     {
-        // Check if name contains underscores, if so make it lower case and replace underscores with spaces
-        if (strpos($name,'_')){
+        if (class_exists('\Tina4\Utilities')) {
+            return (new \Tina4\Utilities())->camelCase($name);
+        }
+
+        // Fallback for standalone usage without tina4php-core
+        if (strpos($name, '_')) {
             $name = str_replace('_', ' ', strtolower($name));
         }
 

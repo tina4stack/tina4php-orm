@@ -499,7 +499,7 @@ class ORM extends \stdClass implements \JsonSerializable
         $getLastId = false;
 
         //@todo this next piece needs to standardize the errors from the different database sources - perhaps with a getNoneError on the database abstraction
-        if ($exists->error->getErrorMessage() === "" || in_array(strtolower($exists->error->getErrorMessage()), ["none", "no more rows available", "unknown error", "not an error"])) {
+        if ($exists->error->isSuccess()) {
             if ($exists->noOfRecords === 0) { //insert
                 if (is_array($this->primaryKey) || strpos($this->primaryKey, ",") !== false) {
                     $getLastId = false;
@@ -527,7 +527,7 @@ class ORM extends \stdClass implements \JsonSerializable
             }
 
 
-            if (empty($error->getErrorMessage()) || in_array(strtolower($error->getErrorMessage()), ["none", "not an error"])) {
+            if ($error->isSuccess()) {
                 $this->DBA->commit();
 
                 //get last id

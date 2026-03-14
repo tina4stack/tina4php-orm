@@ -148,21 +148,17 @@ class ORMSQLGenerator
             $fieldValues[] = $newId;
         }
 
-        if (!empty($orm->DBA) && !$keyInFieldList) {
-            if (get_class($orm->DBA) === "Tina4\DataFirebird") {
-                if (!is_array($orm->primaryKey)) {
-                    $primaryKeys = explode(",", $orm->primaryKey);
-                } else {
-                    $primaryKeys = $orm->primaryKey;
-                }
-
-                foreach ($primaryKeys as $id => $primaryKey) {
-                    $primaryKeys[$id] = $orm->getFieldName($primaryKey,$orm->fieldMapping);
-                }
-                $returningStatement = " returning " . join(",", $primaryKeys);
-            } elseif (get_class($orm->DBA) === "Tina4\DataSQLite3") {
-                $returningStatement = "";
+        if (!empty($orm->DBA) && !$keyInFieldList && $orm->DBA->supportsReturning()) {
+            if (!is_array($orm->primaryKey)) {
+                $primaryKeys = explode(",", $orm->primaryKey);
+            } else {
+                $primaryKeys = $orm->primaryKey;
             }
+
+            foreach ($primaryKeys as $id => $primaryKey) {
+                $primaryKeys[$id] = $orm->getFieldName($primaryKey,$orm->fieldMapping);
+            }
+            $returningStatement = " returning " . join(",", $primaryKeys);
         }
 
         Debug::message("SQL:\ninsert into {$tableName} (" . join(",", $insertColumns) . ")\nvalues (" . join(",", $insertValues) . "){$returningStatement}");
