@@ -3,3 +3,5 @@
 /phpmetrics/
 /vendor/
 /src/templates/
+.phpunit.cache
+.claude/

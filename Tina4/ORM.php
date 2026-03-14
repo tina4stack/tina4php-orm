@@ -7,8 +7,6 @@
 
 namespace Tina4;
 
-use function PHPUnit\Framework\throwException;
-
 /**
  * A very simple ORM for reading and writing data to a database or just for a simple NO SQL solution
  * @package Tina4

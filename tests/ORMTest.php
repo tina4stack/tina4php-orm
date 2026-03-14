@@ -13,6 +13,8 @@ require_once "./src/orm/Person.php";
 
 class ORMTest extends TestCase
 {
+    protected $DBA;
+
     final public function SetUp(): void
     {
         global $DBA;
