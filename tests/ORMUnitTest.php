@@ -100,6 +100,7 @@ class MockDBA implements \Tina4\DataBase
     public function getQueryParam(string $fieldName, int $fieldIndex): string { return "?"; }
     public function isNoSQL(): bool { return false; }
     public function getShortName(): string { return "mock"; }
+    public function supportsReturning(): bool { return false; }
 }
 
 
