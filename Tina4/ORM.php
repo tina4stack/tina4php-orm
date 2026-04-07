@@ -553,7 +553,7 @@ class ORM extends \stdClass implements \JsonSerializable
 
                 $sqlFetch = "select * from {$tableName} where {$primaryCheck}";
 
-                $fetchData = $this->DBA->fetchOne($sqlFetch, 1, 0, $fieldMapping);
+                $fetchData = $this->DBA->fetchOne($sqlFetch,0);
 
                 if (!empty($fetchData)) {
                     $this->mapFromRecord($fetchData->asArray(), false);
